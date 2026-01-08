@@ -11,9 +11,13 @@ redash-mcp-server
 
 # Output of the go coverage tool
 *.out
+coverage.*
+*.coverprofile
+profile.cov
 
 # Go workspace file
 go.work
+go.work.sum
 
 # Environment variables
 .env
