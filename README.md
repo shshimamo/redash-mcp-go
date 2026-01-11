@@ -23,7 +23,50 @@ Model Context Protocol (MCP) server for integrating Redash with AI assistants li
 
 ## Installation
 
-### 1. ソースからビルド
+### 方法1: ビルド済みバイナリをダウンロード（推奨）
+
+[Releases ページ](https://github.com/shshimamo/redash-mcp-go/releases) から最新版をダウンロードしてください。
+
+#### macOS
+
+```bash
+# Apple Silicon (M1/M2/M3)
+curl -L https://github.com/shshimamo/redash-mcp-go/releases/latest/download/redash-mcp-go-darwin-arm64 -o redash-mcp-go
+
+# Intel Mac
+curl -L https://github.com/shshimamo/redash-mcp-go/releases/latest/download/redash-mcp-go-darwin-amd64 -o redash-mcp-go
+
+# 実行権限を付与して配置
+chmod +x redash-mcp-go
+sudo mv redash-mcp-go /usr/local/bin/
+```
+
+#### Linux
+
+```bash
+# amd64
+curl -L https://github.com/shshimamo/redash-mcp-go/releases/latest/download/redash-mcp-go-linux-amd64 -o redash-mcp-go
+
+# arm64
+curl -L https://github.com/shshimamo/redash-mcp-go/releases/latest/download/redash-mcp-go-linux-arm64 -o redash-mcp-go
+
+# 実行権限を付与して配置
+chmod +x redash-mcp-go
+sudo mv redash-mcp-go /usr/local/bin/
+```
+
+#### Windows
+
+PowerShell で実行：
+
+```powershell
+Invoke-WebRequest -Uri "https://github.com/shshimamo/redash-mcp-go/releases/latest/download/redash-mcp-go-windows-amd64.exe" -OutFile "redash-mcp-go.exe"
+
+# PATH が通っているディレクトリに配置
+Move-Item redash-mcp-go.exe C:\Windows\System32\
+```
+
+### 方法2: ソースからビルド（開発者向け）
 
 ```bash
 # リポジトリをクローン
@@ -34,22 +77,7 @@ cd redash-mcp-go
 make build
 
 # または直接 go build
-go build -o redash-mcp-server .
-```
-
-### 2. 環境変数の設定
-
-`.env.example` をコピーして `.env` を作成：
-
-```bash
-cp .env.example .env
-```
-
-`.env` を編集して Redash の情報を設定：
-
-```bash
-REDASH_URL=https://your-redash-instance.com
-REDASH_API_KEY=your-api-key-here
+go build -o redash-mcp-go .
 ```
 
 ## Usage
@@ -69,7 +97,7 @@ cp .mcp.json.example .mcp.json
   "mcpServers": {
     "redash": {
       "type": "stdio",
-      "command": "/Users/YOUR_USERNAME/go/VERSION/bin/redash-mcp-go",
+      "command": "/usr/local/bin/redash-mcp-go",
       "env": {
         "REDASH_URL": "https://your-redash-instance.com",
         "REDASH_API_KEY": "your-api-key"
@@ -86,7 +114,7 @@ cp .mcp.json.example .mcp.json
 claude mcp add --transport stdio redash --scope project \
   --env REDASH_URL=https://your-redash-instance.com \
   --env REDASH_API_KEY=your-api-key \
-  -- /Users/YOUR_USERNAME/go/VERSION/bin/redash-mcp-go
+  -- /usr/local/bin/redash-mcp-go
 ```
 
 ### Claude Desktop - グローバル設定
@@ -99,7 +127,7 @@ claude mcp add --transport stdio redash --scope project \
 {
   "mcpServers": {
     "redash": {
-      "command": "/Users/YOUR_USERNAME/go/VERSION/bin/redash-mcp-go",
+      "command": "/usr/local/bin/redash-mcp-go",
       "env": {
         "REDASH_URL": "https://your-redash-instance.com",
         "REDASH_API_KEY": "your-api-key"
@@ -111,11 +139,39 @@ claude mcp add --transport stdio redash --scope project \
 
 #### Linux
 
-`~/.config/Claude/claude_desktop_config.json` を編集（上記と同じ形式）
+`~/.config/Claude/claude_desktop_config.json` を編集：
+
+```json
+{
+  "mcpServers": {
+    "redash": {
+      "command": "/usr/local/bin/redash-mcp-go",
+      "env": {
+        "REDASH_URL": "https://your-redash-instance.com",
+        "REDASH_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
 
 #### Windows
 
-`%APPDATA%\Claude\claude_desktop_config.json` を編集（上記と同じ形式）
+`%APPDATA%\Claude\claude_desktop_config.json` を編集：
+
+```json
+{
+  "mcpServers": {
+    "redash": {
+      "command": "C:\\Windows\\System32\\redash-mcp-go.exe",
+      "env": {
+        "REDASH_URL": "https://your-redash-instance.com",
+        "REDASH_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
 
 ## Testing
 

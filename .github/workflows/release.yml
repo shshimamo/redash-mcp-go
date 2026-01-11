@@ -1,0 +1,101 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # v1.0.0 のようなタグがプッシュされたときに実行
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Build binaries
+        run: |
+          # macOS (Intel)
+          GOOS=darwin GOARCH=amd64 go build -o redash-mcp-go-darwin-amd64 -ldflags="-s -w" .
+
+          # macOS (Apple Silicon)
+          GOOS=darwin GOARCH=arm64 go build -o redash-mcp-go-darwin-arm64 -ldflags="-s -w" .
+
+          # Linux (amd64)
+          GOOS=linux GOARCH=amd64 go build -o redash-mcp-go-linux-amd64 -ldflags="-s -w" .
+
+          # Linux (arm64)
+          GOOS=linux GOARCH=arm64 go build -o redash-mcp-go-linux-arm64 -ldflags="-s -w" .
+
+          # Windows (amd64)
+          GOOS=windows GOARCH=amd64 go build -o redash-mcp-go-windows-amd64.exe -ldflags="-s -w" .
+
+      - name: Create checksums
+        run: |
+          sha256sum redash-mcp-go-* > checksums.txt
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            redash-mcp-go-darwin-amd64
+            redash-mcp-go-darwin-arm64
+            redash-mcp-go-linux-amd64
+            redash-mcp-go-linux-arm64
+            redash-mcp-go-windows-amd64.exe
+            checksums.txt
+          body: |
+            ## インストール方法
+
+            ### macOS
+            ```bash
+            # Intel Mac
+            curl -L https://github.com/shshimamo/redash-mcp-go/releases/download/${{ steps.version.outputs.VERSION }}/redash-mcp-go-darwin-amd64 -o redash-mcp-go
+
+            # Apple Silicon Mac
+            curl -L https://github.com/shshimamo/redash-mcp-go/releases/download/${{ steps.version.outputs.VERSION }}/redash-mcp-go-darwin-arm64 -o redash-mcp-go
+
+            chmod +x redash-mcp-go
+            sudo mv redash-mcp-go /usr/local/bin/
+            ```
+
+            ### Linux
+            ```bash
+            # amd64
+            curl -L https://github.com/shshimamo/redash-mcp-go/releases/download/${{ steps.version.outputs.VERSION }}/redash-mcp-go-linux-amd64 -o redash-mcp-go
+
+            # arm64
+            curl -L https://github.com/shshimamo/redash-mcp-go/releases/download/${{ steps.version.outputs.VERSION }}/redash-mcp-go-linux-arm64 -o redash-mcp-go
+
+            chmod +x redash-mcp-go
+            sudo mv redash-mcp-go /usr/local/bin/
+            ```
+
+            ### Windows
+            ```powershell
+            # PowerShell で実行
+            Invoke-WebRequest -Uri "https://github.com/shshimamo/redash-mcp-go/releases/download/${{ steps.version.outputs.VERSION }}/redash-mcp-go-windows-amd64.exe" -OutFile "redash-mcp-go.exe"
+            ```
+
+            ## 検証
+            ```bash
+            # チェックサムを確認
+            sha256sum -c checksums.txt
+            ```
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
