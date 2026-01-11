@@ -18,6 +18,14 @@ Model Context Protocol (MCP) server for integrating Redash with AI assistants li
 
 ## Requirements
 
+### バイナリを使う場合（推奨）
+
+- Redash インスタンスと API キー
+
+**Go のインストールは不要です。** ダウンロードしたバイナリだけで動作します。
+
+### ソースからビルドする場合
+
 - Go 1.25 or later
 - Redash インスタンスと API キー
 
