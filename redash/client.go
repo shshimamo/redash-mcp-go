@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -18,11 +19,21 @@ type Client struct {
 
 // NewClient は新しい Redash クライアントを作成
 func NewClient(baseURL, apiKey string) *Client {
+	// HTTP トランスポートの設定
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+
+	// REDASH_NO_PROXY が "true" の場合、プロキシを無効化
+	// プロキシ環境で内部 Redash に接続する場合に使用
+	if os.Getenv("REDASH_NO_PROXY") == "true" {
+		transport.Proxy = nil
+	}
+
 	return &Client{
 		BaseURL: baseURL,
 		APIKey:  apiKey,
 		client: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout:   30 * time.Second,
+			Transport: transport,
 		},
 	}
 }

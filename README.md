@@ -88,6 +88,31 @@ make build
 go build -o redash-mcp-go .
 ```
 
+## 環境変数
+
+| 変数名 | 必須 | デフォルト | 説明 |
+|--------|------|-----------|------|
+| `REDASH_URL` | ○ | - | Redash インスタンスの URL（例: `https://redash.example.com`） |
+| `REDASH_API_KEY` | ○ | - | Redash の API キー（User Settings から取得） |
+| `REDASH_NO_PROXY` | | `false` | プロキシを無効化（`true` で有効）。プロキシ環境で内部 Redash に接続する場合に使用 |
+
+### 例: プロキシ環境での使用
+
+```json
+{
+  "mcpServers": {
+    "redash": {
+      "command": "/usr/local/bin/redash-mcp-go",
+      "env": {
+        "REDASH_URL": "https://redash-internal.com",
+        "REDASH_API_KEY": "your-api-key",
+        "REDASH_NO_PROXY": "true"
+      }
+    }
+  }
+}
+```
+
 ## Usage
 
 ### Claude Code (CLI) - プロジェクトローカル設定
