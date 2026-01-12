@@ -16,15 +16,19 @@ func main() {
 	// 環境変数から設定を取得
 	redashURL := os.Getenv("REDASH_URL")
 	redashAPIKey := os.Getenv("REDASH_API_KEY")
+	noProxy := os.Getenv("REDASH_NO_PROXY") == "true"
 
 	if redashURL == "" || redashAPIKey == "" {
 		log.Fatal("REDASH_URL and REDASH_API_KEY environment variables are required")
 	}
 
 	log.Printf("Connecting to Redash at: %s", redashURL)
+	if noProxy {
+		log.Printf("Proxy disabled (REDASH_NO_PROXY=true)")
+	}
 
 	// Redash クライアントを作成
-	redashClient := redash.NewClient(redashURL, redashAPIKey)
+	redashClient := redash.NewClient(redashURL, redashAPIKey, noProxy)
 
 	// ツールハンドラーを作成
 	toolHandler := tools.NewHandler(redashClient)
