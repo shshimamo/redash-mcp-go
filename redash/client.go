@@ -71,6 +71,17 @@ type Column struct {
 	Type         string `json:"type"`
 }
 
+// Query はクエリのメタデータ
+type Query struct {
+	ID           int    `json:"id"`
+	Name         string `json:"name"`
+	Description  string `json:"description"`
+	Query        string `json:"query"`
+	DataSourceID int    `json:"data_source_id"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
+}
+
 // ExecuteQuery は保存済みクエリを実行
 // query_id: 実行するクエリのID
 // parameters: クエリパラメータ（オプション）
@@ -223,4 +234,34 @@ func (c *Client) waitForJob(jobID string) (json.RawMessage, error) {
 	}
 
 	return nil, fmt.Errorf("query timeout: job did not complete in 30 seconds")
+}
+
+// GetQuery はクエリのメタデータを取得
+func (c *Client) GetQuery(queryID int) (*Query, error) {
+	url := fmt.Sprintf("%s/api/queries/%d", c.BaseURL, queryID)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Key %s", c.APIKey))
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var query Query
+	if err := json.NewDecoder(resp.Body).Decode(&query); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &query, nil
 }

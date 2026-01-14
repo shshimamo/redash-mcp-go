@@ -24,6 +24,20 @@ func NewHandler(redashClient *redash.Client) *Handler {
 func (h *Handler) GetTools() []mcp.Tool {
 	return []mcp.Tool{
 		{
+			Name:        "get_query",
+			Description: "Get metadata of a saved Redash query (name, description, SQL, etc.)",
+			InputSchema: mcp.InputSchema{
+				Type: "object",
+				Properties: map[string]mcp.Property{
+					"query_id": {
+						Type:        "number",
+						Description: "The ID of the query to get",
+					},
+				},
+				Required: []string{"query_id"},
+			},
+		},
+		{
 			Name:        "execute_query",
 			Description: "Execute a saved Redash query by its ID and return the results",
 			InputSchema: mcp.InputSchema{
@@ -65,6 +79,8 @@ func (h *Handler) GetTools() []mcp.Tool {
 // CallTool は指定された MCP ツールを実行
 func (h *Handler) CallTool(name string, arguments map[string]interface{}) mcp.CallToolResult {
 	switch name {
+	case "get_query":
+		return h.getQuery(arguments)
 	case "execute_query":
 		return h.executeQuery(arguments)
 	case "execute_adhoc_query":
@@ -79,6 +95,62 @@ func (h *Handler) CallTool(name string, arguments map[string]interface{}) mcp.Ca
 			},
 			IsError: true,
 		}
+	}
+}
+
+// getQuery はクエリのメタデータを取得
+func (h *Handler) getQuery(args map[string]interface{}) mcp.CallToolResult {
+	// query_id の取得
+	queryIDFloat, ok := args["query_id"].(float64)
+	if !ok {
+		return mcp.CallToolResult{
+			Content: []mcp.Content{
+				{
+					Type: "text",
+					Text: "query_id must be a number",
+				},
+			},
+			IsError: true,
+		}
+	}
+	queryID := int(queryIDFloat)
+
+	// Redash API を呼び出し
+	query, err := h.redashClient.GetQuery(queryID)
+	if err != nil {
+		return mcp.CallToolResult{
+			Content: []mcp.Content{
+				{
+					Type: "text",
+					Text: fmt.Sprintf("Failed to get query: %v", err),
+				},
+			},
+			IsError: true,
+		}
+	}
+
+	// JSON として整形して返す
+	formatted, err := json.MarshalIndent(query, "", "  ")
+	if err != nil {
+		return mcp.CallToolResult{
+			Content: []mcp.Content{
+				{
+					Type: "text",
+					Text: fmt.Sprintf("Failed to format query: %v", err),
+				},
+			},
+			IsError: true,
+		}
+	}
+
+	return mcp.CallToolResult{
+		Content: []mcp.Content{
+			{
+				Type: "text",
+				Text: string(formatted),
+			},
+		},
+		IsError: false,
 	}
 }
 
