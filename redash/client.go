@@ -115,6 +115,17 @@ type WidgetQuery struct {
 	DataSourceID int    `json:"data_source_id"`
 }
 
+// Alert はアラートのメタデータ
+type Alert struct {
+	ID        int                    `json:"id"`
+	Name      string                 `json:"name"`
+	Query     *Query                 `json:"query,omitempty"`
+	State     string                 `json:"state"`
+	Options   map[string]interface{} `json:"options"`
+	CreatedAt string                 `json:"created_at"`
+	UpdatedAt string                 `json:"updated_at"`
+}
+
 // ExecuteQuery は保存済みクエリを実行
 // query_id: 実行するクエリのID
 // parameters: クエリパラメータ（オプション）
@@ -327,4 +338,34 @@ func (c *Client) GetDashboard(dashboardID int) (*Dashboard, error) {
 	}
 
 	return &dashboard, nil
+}
+
+// GetAlert はアラートのメタデータを取得
+func (c *Client) GetAlert(alertID int) (*Alert, error) {
+	url := fmt.Sprintf("%s/api/alerts/%d", c.BaseURL, alertID)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Key %s", c.APIKey))
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var alert Alert
+	if err := json.NewDecoder(resp.Body).Decode(&alert); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &alert, nil
 }

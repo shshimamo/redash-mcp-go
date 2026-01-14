@@ -52,6 +52,20 @@ func (h *Handler) GetTools() []mcp.Tool {
 			},
 		},
 		{
+			Name:        "get_alert",
+			Description: "Get alert details including query ID, state, and options",
+			InputSchema: mcp.InputSchema{
+				Type: "object",
+				Properties: map[string]mcp.Property{
+					"alert_id": {
+						Type:        "number",
+						Description: "The ID of the alert to get",
+					},
+				},
+				Required: []string{"alert_id"},
+			},
+		},
+		{
 			Name:        "execute_query",
 			Description: "Execute a saved Redash query by its ID and return the results",
 			InputSchema: mcp.InputSchema{
@@ -97,6 +111,8 @@ func (h *Handler) CallTool(name string, arguments map[string]interface{}) mcp.Ca
 		return h.getQuery(arguments)
 	case "get_dashboard":
 		return h.getDashboard(arguments)
+	case "get_alert":
+		return h.getAlert(arguments)
 	case "execute_query":
 		return h.executeQuery(arguments)
 	case "execute_adhoc_query":
@@ -209,6 +225,62 @@ func (h *Handler) getDashboard(args map[string]interface{}) mcp.CallToolResult {
 				{
 					Type: "text",
 					Text: fmt.Sprintf("Failed to format dashboard: %v", err),
+				},
+			},
+			IsError: true,
+		}
+	}
+
+	return mcp.CallToolResult{
+		Content: []mcp.Content{
+			{
+				Type: "text",
+				Text: string(formatted),
+			},
+		},
+		IsError: false,
+	}
+}
+
+// getAlert はアラートのメタデータを取得
+func (h *Handler) getAlert(args map[string]interface{}) mcp.CallToolResult {
+	// alert_id の取得
+	alertIDFloat, ok := args["alert_id"].(float64)
+	if !ok {
+		return mcp.CallToolResult{
+			Content: []mcp.Content{
+				{
+					Type: "text",
+					Text: "alert_id must be a number",
+				},
+			},
+			IsError: true,
+		}
+	}
+	alertID := int(alertIDFloat)
+
+	// Redash API を呼び出し
+	alert, err := h.redashClient.GetAlert(alertID)
+	if err != nil {
+		return mcp.CallToolResult{
+			Content: []mcp.Content{
+				{
+					Type: "text",
+					Text: fmt.Sprintf("Failed to get alert: %v", err),
+				},
+			},
+			IsError: true,
+		}
+	}
+
+	// JSON として整形して返す
+	formatted, err := json.MarshalIndent(alert, "", "  ")
+	if err != nil {
+		return mcp.CallToolResult{
+			Content: []mcp.Content{
+				{
+					Type: "text",
+					Text: fmt.Sprintf("Failed to format alert: %v", err),
 				},
 			},
 			IsError: true,
