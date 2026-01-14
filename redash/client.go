@@ -82,6 +82,39 @@ type Query struct {
 	UpdatedAt    string `json:"updated_at"`
 }
 
+// Dashboard はダッシュボードのメタデータ
+type Dashboard struct {
+	ID        int       `json:"id"`
+	Name      string    `json:"name"`
+	Slug      string    `json:"slug"`
+	Widgets   []Widget  `json:"widgets"`
+	CreatedAt string    `json:"created_at"`
+	UpdatedAt string    `json:"updated_at"`
+}
+
+// Widget はダッシュボード内のウィジェット
+type Widget struct {
+	ID            int            `json:"id"`
+	Visualization *Visualization `json:"visualization,omitempty"`
+}
+
+// Visualization はウィジェット内のビジュアライゼーション
+type Visualization struct {
+	ID    int          `json:"id"`
+	Name  string       `json:"name"`
+	Type  string       `json:"type"`
+	Query *WidgetQuery `json:"query,omitempty"`
+}
+
+// WidgetQuery はビジュアライゼーションに紐づくクエリ
+type WidgetQuery struct {
+	ID           int    `json:"id"`
+	Name         string `json:"name"`
+	Description  string `json:"description"`
+	Query        string `json:"query"`
+	DataSourceID int    `json:"data_source_id"`
+}
+
 // ExecuteQuery は保存済みクエリを実行
 // query_id: 実行するクエリのID
 // parameters: クエリパラメータ（オプション）
@@ -264,4 +297,34 @@ func (c *Client) GetQuery(queryID int) (*Query, error) {
 	}
 
 	return &query, nil
+}
+
+// GetDashboard はダッシュボードのメタデータを取得
+func (c *Client) GetDashboard(dashboardID int) (*Dashboard, error) {
+	url := fmt.Sprintf("%s/api/dashboards/%d", c.BaseURL, dashboardID)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Key %s", c.APIKey))
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var dashboard Dashboard
+	if err := json.NewDecoder(resp.Body).Decode(&dashboard); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &dashboard, nil
 }

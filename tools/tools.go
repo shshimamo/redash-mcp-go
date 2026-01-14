@@ -38,6 +38,20 @@ func (h *Handler) GetTools() []mcp.Tool {
 			},
 		},
 		{
+			Name:        "get_dashboard",
+			Description: "Get dashboard details including widgets and their associated queries",
+			InputSchema: mcp.InputSchema{
+				Type: "object",
+				Properties: map[string]mcp.Property{
+					"dashboard_id": {
+						Type:        "number",
+						Description: "The ID of the dashboard to get",
+					},
+				},
+				Required: []string{"dashboard_id"},
+			},
+		},
+		{
 			Name:        "execute_query",
 			Description: "Execute a saved Redash query by its ID and return the results",
 			InputSchema: mcp.InputSchema{
@@ -81,6 +95,8 @@ func (h *Handler) CallTool(name string, arguments map[string]interface{}) mcp.Ca
 	switch name {
 	case "get_query":
 		return h.getQuery(arguments)
+	case "get_dashboard":
+		return h.getDashboard(arguments)
 	case "execute_query":
 		return h.executeQuery(arguments)
 	case "execute_adhoc_query":
@@ -137,6 +153,62 @@ func (h *Handler) getQuery(args map[string]interface{}) mcp.CallToolResult {
 				{
 					Type: "text",
 					Text: fmt.Sprintf("Failed to format query: %v", err),
+				},
+			},
+			IsError: true,
+		}
+	}
+
+	return mcp.CallToolResult{
+		Content: []mcp.Content{
+			{
+				Type: "text",
+				Text: string(formatted),
+			},
+		},
+		IsError: false,
+	}
+}
+
+// getDashboard はダッシュボードのメタデータを取得
+func (h *Handler) getDashboard(args map[string]interface{}) mcp.CallToolResult {
+	// dashboard_id の取得
+	dashboardIDFloat, ok := args["dashboard_id"].(float64)
+	if !ok {
+		return mcp.CallToolResult{
+			Content: []mcp.Content{
+				{
+					Type: "text",
+					Text: "dashboard_id must be a number",
+				},
+			},
+			IsError: true,
+		}
+	}
+	dashboardID := int(dashboardIDFloat)
+
+	// Redash API を呼び出し
+	dashboard, err := h.redashClient.GetDashboard(dashboardID)
+	if err != nil {
+		return mcp.CallToolResult{
+			Content: []mcp.Content{
+				{
+					Type: "text",
+					Text: fmt.Sprintf("Failed to get dashboard: %v", err),
+				},
+			},
+			IsError: true,
+		}
+	}
+
+	// JSON として整形して返す
+	formatted, err := json.MarshalIndent(dashboard, "", "  ")
+	if err != nil {
+		return mcp.CallToolResult{
+			Content: []mcp.Content{
+				{
+					Type: "text",
+					Text: fmt.Sprintf("Failed to format dashboard: %v", err),
 				},
 			},
 			IsError: true,
